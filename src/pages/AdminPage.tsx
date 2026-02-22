@@ -14,7 +14,7 @@ import type { Database } from "@/integrations/supabase/types";
 import SocialMediaManager from "@/components/SocialMediaManager";
 import {
   Plus, Package, ShoppingCart, MessageSquare, Image,
-  ArrowLeft, Trash2, Edit, Eye, EyeOff, Save, X, Shield, UserPlus, Bell, Calendar, User, Link as LinkIcon, Settings, MapPin, ExternalLink
+  ArrowLeft, Trash2, Edit, Eye, EyeOff, Save, X, Shield, UserPlus, Bell, Calendar, User, Link as LinkIcon, Settings, MapPin, ExternalLink, Download
 } from "lucide-react";
 
 type OrderStatus = Database["public"]["Enums"]["order_status"];
@@ -101,7 +101,8 @@ const AdminPage = () => {
   const [adminPhone, setAdminPhone] = useState("");
 
   // Order date filter
-  const [orderDateFilter, setOrderDateFilter] = useState("");
+  const [orderStartDate, setOrderStartDate] = useState("");
+  const [orderEndDate, setOrderEndDate] = useState("");
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -350,10 +351,83 @@ const AdminPage = () => {
     setAdditionalUrls(additionalUrls.filter((_, i) => i !== index));
   };
 
+  const handleExportOrders = async () => {
+    if (filteredOrders.length === 0) {
+      toast.error("Yuklab olish uchun buyurtmalar mavjud emas");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Fetch order items for all filtered orders
+      const orderIds = filteredOrders.map(o => o.id);
+      const { data: itemsData, error: itemsError } = await supabase
+        .from("order_items")
+        .select("*, products(name)")
+        .in("order_id", orderIds);
+
+      if (itemsError) throw itemsError;
+
+      const itemsMap: Record<string, string[]> = {};
+      (itemsData || []).forEach((item: any) => {
+        if (!itemsMap[item.order_id]) itemsMap[item.order_id] = [];
+        itemsMap[item.order_id].push(`${item.products?.name} (${item.quantity} dona)`);
+      });
+
+      // Prepare CSV content
+      const headers = ["ID", "Sana", "Mijoz", "Telefon", "Mahsulotlar", "Umumiy summa", "Holat", "Eslatma"];
+      const rows = filteredOrders.map(o => {
+        const profile = orderProfiles[o.user_id];
+        const date = new Date(o.created_at).toLocaleString("uz-UZ");
+        const productsList = itemsMap[o.id]?.join(", ") || "";
+
+        return [
+          o.id.slice(0, 8),
+          date,
+          profile?.full_name || "Noma'lum",
+          profile?.phone || "",
+          `"${productsList.replace(/"/g, '""')}"`, // Escape quotes and wrap in quotes
+          o.total_amount,
+          o.status,
+          `"${(o.notes || "").replace(/"/g, '""')}"`
+        ];
+      });
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map(row => row.join(","))
+      ].join("\n");
+
+      // Add BOM for Excel UTF-8 support
+      const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      const fileName = `buyurtmalar_${orderStartDate || "barchasi"}_${orderEndDate || "bugun"}.csv`;
+
+      link.setAttribute("href", url);
+      link.setAttribute("download", fileName);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success("Ma'lumotlar muvaffaqiyatli yuklab olindi");
+    } catch (error: any) {
+      console.error("Export error:", error);
+      toast.error("Yuklab olishda xatolik yuz berdi");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Group orders by date
-  const filteredOrders = orderDateFilter
-    ? orders.filter(o => o.created_at.startsWith(orderDateFilter))
-    : orders;
+  const filteredOrders = orders.filter(o => {
+    const orderDate = o.created_at.split("T")[0];
+    if (orderStartDate && orderDate < orderStartDate) return false;
+    if (orderEndDate && orderDate > orderEndDate) return false;
+    return true;
+  });
 
   const groupedOrders: Record<string, Order[]> = {};
   filteredOrders.forEach(o => {
@@ -520,16 +594,25 @@ const AdminPage = () => {
         {/* Orders Tab */}
         {activeTab === "orders" && (
           <div>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
               <h2 className="text-lg font-semibold text-foreground">Buyurtmalar ({filteredOrders.length})</h2>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <Input type="date" value={orderDateFilter} onChange={(e) => setOrderDateFilter(e.target.value)} className="w-44" />
-                {orderDateFilter && (
-                  <Button variant="outline" size="sm" onClick={() => setOrderDateFilter("")}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Dan:</span>
+                  <Input type="date" value={orderStartDate} onChange={(e) => setOrderStartDate(e.target.value)} className="w-36 h-8 border-0 bg-transparent focus-visible:ring-0 p-0" />
+                  <span className="text-sm text-muted-foreground ml-2">Gacha:</span>
+                  <Input type="date" value={orderEndDate} onChange={(e) => setOrderEndDate(e.target.value)} className="w-36 h-8 border-0 bg-transparent focus-visible:ring-0 p-0" />
+                  {(orderStartDate || orderEndDate) && (
+                    <Button variant="ghost" size="icon" onClick={() => { setOrderStartDate(""); setOrderEndDate(""); }} className="h-6 w-6 ml-1">
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+                <Button variant="outline" size="sm" onClick={handleExportOrders} disabled={loading} className="flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Yuklab olish
+                </Button>
               </div>
             </div>
             {Object.entries(groupedOrders).map(([date, dateOrders]) => (
