@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowLeft, Send, Phone, KeyRound } from "lucide-react";
 
-const TELEGRAM_BOT_URL = "https://t.me/noutpro_bot";
+const TELEGRAM_BOT_URL = "https://t.me/Noutproo_bot";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -40,7 +40,9 @@ const AuthPage = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Tasdiqlashda xatolik");
+        const errorMsg = data.error || "Tasdiqlashda xatolik";
+        const details = data.details ? ` (${data.details})` : "";
+        throw new Error(errorMsg + details);
       }
 
       // Sign in with email/password returned from edge function
@@ -54,6 +56,7 @@ const AuthPage = () => {
       toast.success("Muvaffaqiyatli kirdingiz!");
       navigate("/");
     } catch (error: unknown) {
+      console.error("Auth error:", error);
       const msg = error instanceof Error ? error.message : "Xatolik yuz berdi";
       toast.error(msg);
     } finally {
