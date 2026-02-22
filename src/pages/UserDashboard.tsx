@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ArrowLeft, User, Save, Package, Clock } from "lucide-react";
+import SocialMediaLinks from "@/components/SocialMediaLinks";
 
 interface Order {
   id: string;

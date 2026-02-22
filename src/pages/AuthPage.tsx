@@ -72,7 +72,7 @@ const AuthPage = () => {
           Bosh sahifaga
         </button>
 
-        <div className="bg-card rounded-xl border border-border p-8">
+        <div className="bg-card text-foreground rounded-xl border border-border p-8">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-gradient mb-2">NOUTPRO</h1>
             <p className="text-muted-foreground">Telegram orqali kirish</p>

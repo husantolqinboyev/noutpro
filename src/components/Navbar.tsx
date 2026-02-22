@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu, X, ShoppingCart, User, LogOut, Shield, Home, Package, LayoutGrid, Phone } from "lucide-react";
+import { Menu, X, ShoppingCart, User, LogOut, Shield, Home, Package, LayoutGrid, Phone, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import AIAssistant from "./AIAssistant";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -61,6 +63,31 @@ const Navbar = () => {
             )}
           </Button>
 
+          {/* AI Assistant */}
+          {!loading && user && (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-hero-muted hover:text-primary"
+                >
+                  <Bot className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="sm:max-w-[500px] w-full p-0">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>AI Yordamchi</SheetTitle>
+                </SheetHeader>
+                <div className="h-full flex flex-col pt-10">
+                  <div className="p-6 overflow-y-auto flex-1">
+                    <AIAssistant className="border-none shadow-none max-w-none w-full" />
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          )}
+
           {!loading && user ? (
             <>
               {isAdmin && (
@@ -100,6 +127,32 @@ const Navbar = () => {
               </Badge>
             )}
           </Button>
+
+          {/* Mobile AI Assistant Trigger */}
+          {!loading && user && (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-hero-muted hover:text-primary"
+                >
+                  <Bot className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="sm:max-w-[500px] w-full p-0">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>AI Yordamchi</SheetTitle>
+                </SheetHeader>
+                <div className="h-full flex flex-col pt-10">
+                  <div className="p-6 overflow-y-auto flex-1">
+                    <AIAssistant className="border-none shadow-none max-w-none w-full" />
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          )}
+
           <button
             className="text-hero-muted"
             onClick={() => setMobileOpen(!mobileOpen)}

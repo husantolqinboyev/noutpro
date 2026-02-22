@@ -1,6 +1,25 @@
-import { Phone, Mail, MapPin, Send } from "lucide-react";
+import { Phone, Mail, Send, Instagram, Youtube, MessageCircle, ExternalLink } from "lucide-react";
+import ShopLocation from "./ShopLocation";
+import { usePublicSocialMedia } from "@/hooks/usePublicSocialMedia";
+import { useShopSettings } from "@/hooks/useShopSettings";
 
 const Footer = () => {
+  const { links } = usePublicSocialMedia();
+  const { settings: shopSettings } = useShopSettings();
+
+  const getPlatformIcon = (platform: string) => {
+    switch (platform) {
+      case 'telegram':
+        return <MessageCircle className="h-5 w-5 text-hero-muted group-hover:text-primary" />;
+      case 'instagram':
+        return <Instagram className="h-5 w-5 text-hero-muted group-hover:text-primary" />;
+      case 'youtube':
+        return <Youtube className="h-5 w-5 text-hero-muted group-hover:text-primary" />;
+      default:
+        return <ExternalLink className="h-5 w-5 text-hero-muted group-hover:text-primary" />;
+    }
+  };
+
   return (
     <footer id="contact" className="bg-hero py-16 border-t border-border/10">
       <div className="container mx-auto px-4">
@@ -26,18 +45,17 @@ const Footer = () => {
           {/* Contact */}
           <div>
             <h4 className="font-semibold text-hero-foreground mb-4">Aloqa</h4>
-            <ul className="space-y-3 text-sm text-hero-muted">
+            <ul className="space-y-4 text-sm text-hero-muted">
               <li className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-primary" />
-                +998 90 123 45 67
+                {shopSettings?.phone || "+998 90 123 45 67"}
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-primary" />
-                info@noutpro.uz
+                {shopSettings?.email || "info@noutpro.uz"}
               </li>
-              <li className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-primary" />
-                Toshkent, O'zbekiston
+              <li>
+                <ShopLocation />
               </li>
             </ul>
           </div>
@@ -50,11 +68,26 @@ const Footer = () => {
             </p>
             <a
               href="#"
-              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity mb-4"
             >
               <Send className="h-4 w-4" />
               @NoutproBot
             </a>
+
+            <div className="flex flex-wrap gap-3 mt-4">
+              {links.map((link) => (
+                <a
+                  key={link.id}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 bg-hero-muted/10 hover:bg-primary/20 rounded-full transition-colors group"
+                  title={link.platform}
+                >
+                  {getPlatformIcon(link.platform)}
+                </a>
+              ))}
+            </div>
           </div>
         </div>
 

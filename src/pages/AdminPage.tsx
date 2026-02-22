@@ -11,16 +11,17 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { compressImage } from "@/lib/imageUtils";
 import type { Database } from "@/integrations/supabase/types";
+import SocialMediaManager from "@/components/SocialMediaManager";
 import {
   Plus, Package, ShoppingCart, MessageSquare, Image,
-  ArrowLeft, Trash2, Edit, Eye, EyeOff, Save, X, Shield, UserPlus, Bell, Calendar, User, Link as LinkIcon
+  ArrowLeft, Trash2, Edit, Eye, EyeOff, Save, X, Shield, UserPlus, Bell, Calendar, User, Link as LinkIcon, Settings, MapPin, ExternalLink
 } from "lucide-react";
 
 type OrderStatus = Database["public"]["Enums"]["order_status"];
 type Product = Database["public"]["Tables"]["products"]["Row"];
 type Order = Database["public"]["Tables"]["orders"]["Row"];
 type Comment = Database["public"]["Tables"]["comments"]["Row"];
-type Tab = "products" | "orders" | "comments" | "banners" | "roles";
+type Tab = "products" | "orders" | "comments" | "banners" | "roles" | "social" | "settings";
 
 interface Banner {
   id: string;
@@ -30,6 +31,8 @@ interface Banner {
   is_active: boolean;
   sort_order: number;
 }
+
+import { useShopSettings } from "@/hooks/useShopSettings";
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -43,6 +46,37 @@ const AdminPage = () => {
   const [orderProfiles, setOrderProfiles] = useState<Record<string, { full_name: string; phone: string | null }>>({});
   const [commentProfiles, setCommentProfiles] = useState<Record<string, { full_name: string }>>({});
   const [newOrderCount, setNewOrderCount] = useState(0);
+
+  // Shop settings
+  const { settings: shopSettings, updateSettings } = useShopSettings();
+  const [settingsForm, setSettingsForm] = useState({
+    phone: "", email: "", address: "", latitude: "", longitude: ""
+  });
+
+  useEffect(() => {
+    if (shopSettings) {
+      setSettingsForm({
+        phone: shopSettings.phone,
+        email: shopSettings.email,
+        address: shopSettings.address,
+        latitude: shopSettings.latitude.toString(),
+        longitude: shopSettings.longitude.toString()
+      });
+    }
+  }, [shopSettings]);
+
+  const handleSettingsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    await updateSettings({
+      phone: settingsForm.phone,
+      email: settingsForm.email,
+      address: settingsForm.address,
+      latitude: parseFloat(settingsForm.latitude) || 0,
+      longitude: parseFloat(settingsForm.longitude) || 0
+    });
+    setLoading(false);
+  };
 
   // Product form
   const [showForm, setShowForm] = useState(false);
@@ -333,6 +367,8 @@ const AdminPage = () => {
     { key: "orders", label: "Buyurtmalar", icon: <ShoppingCart className="h-4 w-4" />, badge: newOrderCount || undefined },
     { key: "comments", label: "Izohlar", icon: <MessageSquare className="h-4 w-4" /> },
     { key: "banners", label: "Bannerlar", icon: <Image className="h-4 w-4" /> },
+    { key: "social", label: "Ijtimoiy tarmoqlar", icon: <LinkIcon className="h-4 w-4" /> },
+    { key: "settings", label: "Sozlamalar", icon: <Settings className="h-4 w-4" /> },
     { key: "roles", label: "Rollar", icon: <Shield className="h-4 w-4" /> },
   ];
 
@@ -623,6 +659,13 @@ const AdminPage = () => {
           </div>
         )}
 
+        {/* Social Media Tab */}
+        {activeTab === "social" && (
+          <div>
+            <SocialMediaManager />
+          </div>
+        )}
+
         {/* Roles Tab */}
         {activeTab === "roles" && (
           <div>
@@ -633,6 +676,120 @@ const AdminPage = () => {
                 <div><Label>Telefon raqam</Label><Input value={adminPhone} onChange={(e) => setAdminPhone(e.target.value)} placeholder="+998901234567" /></div>
                 <Button onClick={handleAssignAdmin} disabled={loading}><UserPlus className="h-4 w-4 mr-2" />Admin qilish</Button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === "settings" && (
+          <div className="max-w-2xl">
+            <h2 className="text-lg font-semibold text-foreground mb-6">Do'kon sozlamalari</h2>
+            <div className="bg-card border border-border rounded-xl p-6">
+              <form onSubmit={handleSettingsSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Telefon raqam</Label>
+                    <Input
+                      value={settingsForm.phone}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
+                      placeholder="+998 90 123 45 67"
+                    />
+                  </div>
+                  <div>
+                    <Label>Email</Label>
+                    <Input
+                      type="email"
+                      value={settingsForm.email}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, email: e.target.value })}
+                      placeholder="info@example.com"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Manzil</Label>
+                  <Textarea
+                    value={settingsForm.address}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, address: e.target.value })}
+                    placeholder="Toshkent shahri, ..."
+                    rows={2}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Kenglik (Latitude)</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-primary hover:text-primary/80 p-0"
+                        onClick={() => {
+                          if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(
+                              (pos) => {
+                                setSettingsForm(prev => ({
+                                  ...prev,
+                                  latitude: pos.coords.latitude.toString(),
+                                  longitude: pos.coords.longitude.toString()
+                                }));
+                                toast.success("Koordinatalar o'rnatildi!");
+                              },
+                              (err) => toast.error("Joylashuvni aniqlab bo'lmadi: " + err.message)
+                            );
+                          } else {
+                            toast.error("Brauzeringiz geolokatsiyani qo'llab-quvvatlamaydi");
+                          }
+                        }}
+                      >
+                        <MapPin className="h-3 w-3 mr-1" />
+                        Hozirgi joylashuv
+                      </Button>
+                    </div>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={settingsForm.latitude}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, latitude: e.target.value })}
+                      placeholder="41.311081"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Uzunlik (Longitude)</Label>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={settingsForm.longitude}
+                      onChange={(e) => setSettingsForm({ ...settingsForm, longitude: e.target.value })}
+                      placeholder="69.240562"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mt-1">
+                  <span>Yordam:</span>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${settingsForm.latitude || 41.311081},${settingsForm.longitude || 69.240562}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline flex items-center gap-1"
+                  >
+                    Google Maps-da ko'rish <ExternalLink className="h-3 w-3" />
+                  </a>
+                  <a
+                    href={`https://yandex.uz/maps/?pt=${settingsForm.longitude || 69.240562},${settingsForm.latitude || 41.311081}&z=16&l=map`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline flex items-center gap-1"
+                  >
+                    Yandex Maps-da ko'rish <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+                <div className="pt-2">
+                  <Button type="submit" disabled={loading}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Saqlash
+                  </Button>
+                </div>
+              </form>
             </div>
           </div>
         )}

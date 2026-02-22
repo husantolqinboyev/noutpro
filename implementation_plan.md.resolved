@@ -1,0 +1,45 @@
+# Fix Supabase Initialization Crash
+
+The application is crashing on startup with `Uncaught Error: supabaseKey is required`. This is caused by [src/lib/supabase.ts](file:///c:/Users/%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%BE%D1%80/Downloads/speedy-gadgets-hub-main%20%281%29/speedy-gadgets-hub-main/src/lib/supabase.ts) attempting to initialize `supabaseAdmin` using `VITE_SUPABASE_SECRET_KEY`, which is missing from the [.env](file:///c:/Users/%D0%90%D0%B4%D0%BC%D0%B8%D0%BD%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%82%D0%BE%D1%80/Downloads/speedy-gadgets-hub-main%20%281%29/speedy-gadgets-hub-main/.env) file.
+
+## User Review Required
+
+> [!IMPORTANT]
+> `VITE_SUPABASE_SECRET_KEY` (Supabase service_role key) is required for AI features to work. However, exposing this key via the `VITE_` prefix makes it accessible to the client-side browser, which is a security risk.
+> I will implement a fix to prevent the crash when the key is missing, but for the AI features to work, you will still need to provide a key or refactor how secrets are handled.
+
+## Proposed Changes
+
+### Supabase Integration
+
+#### [MODIFY] [supabase.ts](file:///c:/Users/Администратор/Downloads/speedy-gadgets-hub-main%20(1)/speedy-gadgets-hub-main/src/lib/supabase.ts)
+- Update `supabaseAdmin` initialization to be optional. If `VITE_SUPABASE_SECRET_KEY` is missing, `supabaseAdmin` will be `null` instead of throwing an error.
+- Add descriptive error logging when the key is missing.
+
+#### [MODIFY] [groq.ts](file:///c:/Users/Администратор/Downloads/speedy-gadgets-hub-main%20(1)/speedy-gadgets-hub-main/src/lib/groq.ts)
+- Add checks for `supabaseAdmin` being `null` before calling `functions.invoke`.
+- Throw a clear user-facing error if an attempt is made to use AI features without the required configuration.
+
+### Edge Function Auth (401 Error Fix)
+
+#### [MODIFY] [config.toml](file:///c:/Users/Администратор/Downloads/speedy-gadgets-hub-main%20(1)/speedy-gadgets-hub-main/supabase/config.toml)
+- [x] Corrected `project_id` to `xbuyuflvmfauvdlpguem`.
+
+#### [DEBUG] Manual Steps for User
+- Check the Supabase Dashboard -> Edge Functions -> `telegram-bot` -> Settings.
+- Ensure "Verify JWT" (or "Authentication") is turned **OFF**.
+- If the above doesn't work, try updating the Telegram webhook URL to include the apikey:
+  `https://xbuyuflvmfauvdlpguem.supabase.co/functions/v1/telegram-bot?apikey=YOUR_ANON_KEY`
+
+---
+
+## Verification Plan
+
+### Automated Tests
+- I will run `npm run dev` to verify that the application no longer crashes on startup.
+- I will check the browser console (if possible via browser subagent) to confirm that the "supabaseKey is required" error is gone.
+
+### Manual Verification
+- Verify that the app loads the main page without a white screen/crash.
+- Attempt to use the AI assistant and verify that it shows a clear error message about the missing configuration instead of crashing the whole app.
+- **New**: Open the Auth page and verify that all text, inputs, and buttons are clearly visible.
