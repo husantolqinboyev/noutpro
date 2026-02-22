@@ -31,6 +31,7 @@ export interface ShopSettings {
   phone: string;
   email: string;
   address: string;
+  telegram_bot_url: string;
   latitude: number;
   longitude: number;
   updated_at: string;

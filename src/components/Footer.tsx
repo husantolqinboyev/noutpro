@@ -67,11 +67,13 @@ const Footer = () => {
               Ro'yxatdan o'tish va buyurtma berish uchun Telegram botimizga qo'shiling.
             </p>
             <a
-              href="#"
+              href={shopSettings?.telegram_bot_url || "https://t.me/Noutproo_bot"}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity mb-4"
             >
               <Send className="h-4 w-4" />
-              @NoutproBot
+              {shopSettings?.telegram_bot_url ? "@" + shopSettings.telegram_bot_url.split("/").pop() : "@Noutproo_bot"}
             </a>
 
             <div className="flex flex-wrap gap-3 mt-4">

@@ -50,7 +50,7 @@ const AdminPage = () => {
   // Shop settings
   const { settings: shopSettings, updateSettings } = useShopSettings();
   const [settingsForm, setSettingsForm] = useState({
-    phone: "", email: "", address: "", latitude: "", longitude: ""
+    phone: "", email: "", address: "", telegram_bot_url: "", latitude: "", longitude: ""
   });
 
   useEffect(() => {
@@ -59,6 +59,7 @@ const AdminPage = () => {
         phone: shopSettings.phone,
         email: shopSettings.email,
         address: shopSettings.address,
+        telegram_bot_url: shopSettings.telegram_bot_url || "https://t.me/Noutproo_bot",
         latitude: shopSettings.latitude.toString(),
         longitude: shopSettings.longitude.toString()
       });
@@ -72,6 +73,7 @@ const AdminPage = () => {
       phone: settingsForm.phone,
       email: settingsForm.email,
       address: settingsForm.address,
+      telegram_bot_url: settingsForm.telegram_bot_url,
       latitude: parseFloat(settingsForm.latitude) || 0,
       longitude: parseFloat(settingsForm.longitude) || 0
     });
@@ -714,6 +716,14 @@ const AdminPage = () => {
                     rows={2}
                   />
                 </div>
+                <div>
+                  <Label>Telegram Bot manzili</Label>
+                  <Input
+                    value={settingsForm.telegram_bot_url}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, telegram_bot_url: e.target.value })}
+                    placeholder="https://t.me/Noutproo_bot"
+                  />
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -792,9 +802,10 @@ const AdminPage = () => {
               </form>
             </div>
           </div>
-        )}
-      </div>
-    </div>
+        )
+        }
+      </div >
+    </div >
   );
 };
 
